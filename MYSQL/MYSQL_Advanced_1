@@ -1,0 +1,351 @@
+-- Others MYSQL_Advanced advance queries
+use practice_db;
+
+/*
+SET GLOBAL local_infile = 1;
+
+CREATE TEMPORARY TABLE temp_employee_salary (
+    employee_nbr VARCHAR(10),
+    salary DECIMAL(10,2)
+);
+
+LOAD DATA LOCAL INFILE 'C:\Downloads\employee_salary.csv'
+INTO TABLE temp_employee_salary
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(employee_nbr, salary);
+*/
+
+
+select *
+from ui_employeesalary;
+
+-- Select second-highest salary of an employee
+
+select max(salary)
+from ui_employeesalary
+where salary < (select max(salary) from ui_employeesalary);
+
+select max(salary) from ui_employeesalary;
+
+select salary from ui_employeesalary
+order by 1 desc;
+
+-- Get the nth highest salary rank_x = N in this case 3 meaning the third highest value
+
+select salary 
+from (select salary, DENSE_RANK() OVER (ORDER BY salary DESC) as rank_x
+from ui_employeesalary) as ranked_salaries
+where rank_x = 3;
+
+-- check second select to assign a rank in rank_x
+
+select salary, DENSE_RANK() OVER (ORDER BY salary DESC) as rank_x
+from ui_employeesalary as ranked_salaries;
+
+-- Fetch all employees whose salry is greater than the average salary
+
+select *
+from ui_employeesalary
+where salary > (select avg(salary) from ui_employeesalary);
+
+-- to check avg salary
+
+select avg(salary) from ui_employeesalary;
+
+-- Current date and Time
+
+select current_timestamp();
+
+-- find duplicate
+
+SELECT full_name, COUNT(*) AS cnt
+FROM ui_duplicatecolumn
+GROUP BY full_name
+HAVING COUNT(*) > 1;
+
+-- check duplicate column table
+
+select * from ui_duplicatecolumn;
+
+SELECT employee_id, x.rn FROM (
+SELECT employee_id, full_name, ROW_NUMBER() OVER (PARTITION BY full_name ORDER BY employee_id) AS rn from ui_duplicatecolumn) x
+where rn > 1;
+
+-- Delete Duplicated method 1
+
+DELETE FROM ui_duplicatecolumn
+WHERE employee_id IN (
+    SELECT employee_id FROM (
+        SELECT employee_id,
+               ROW_NUMBER() OVER (PARTITION BY full_name ORDER BY employee_id) AS rn
+        FROM ui_duplicatecolumn
+    ) x
+    WHERE rn > 1
+);
+
+-- Delete remove records from a Table
+
+TRUNCATE TABLE ui_duplicatecolumn;
+
+-- Delete Duplicated method 2 MYSQL Doesn't allow delete from CTE file, here is a workaround to do the delete in MYSQL
+
+WITH cte AS (
+    SELECT 
+        employee_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY full_name
+            ORDER BY employee_id
+        ) AS rn
+    FROM ui_duplicatecolumn
+)
+DELETE a
+FROM ui_duplicatecolumn as a
+JOIN cte ON a.employee_id = cte.employee_id
+WHERE cte.rn > 1;
+
+-- common records from 2 tables with Intersect doen't work in MYSQL here a workaround
+
+SELECT a.*
+FROM ui_duplicatecolumn a
+INNER JOIN ui_duplicatecolumn b
+    ON a.employee_id = b.employee_id;
+    
+-- Last 10 record of a table
+
+select *
+from ui_employeesalary
+order by 1 desc
+limit 10;
+
+-- top 5 employees with highest salary
+
+select *
+from  ui_employeesalary
+order by salary desc
+limit 5;
+
+-- total salary
+
+select sum(salary) from ui_employeesalary;
+
+-- Employees who joined in year 2020
+
+-- I need to add a new column with the date to ui_employeesalary
+
+ALTER TABLE ui_employeesalary
+ADD COLUMN Join_Date DATE;
+
+-- Add values to new column Join_Date
+
+UPDATE ui_employeesalary
+SET join_date = CASE employee_nbr
+    WHEN 10001 THEN '2020-01-14'
+    WHEN 10002 THEN '2020-03-22'
+    WHEN 10003 THEN '2020-06-09'
+    WHEN 10004 THEN '2020-09-27'
+    WHEN 10005 THEN '2020-12-04'
+
+    WHEN 10006 THEN '2018-02-11'
+    WHEN 10007 THEN '2018-11-29'
+    WHEN 10008 THEN '2019-04-03'
+    WHEN 10009 THEN '2019-10-18'
+    WHEN 10010 THEN '2021-01-07'
+
+    WHEN 10011 THEN '2021-05-26'
+    WHEN 10012 THEN '2021-11-12'
+    WHEN 10013 THEN '2022-03-15'
+    WHEN 10014 THEN '2022-07-30'
+    WHEN 10015 THEN '2022-12-21'
+
+    WHEN 10016 THEN '2023-02-08'
+    WHEN 10017 THEN '2023-06-19'
+    WHEN 10018 THEN '2023-09-05'
+    WHEN 10019 THEN '2024-01-14'
+    WHEN 10020 THEN '2024-04-27'
+END
+WHERE employee_nbr BETWEEN 10001 AND 10020;
+
+-- query to select who joined in 2020
+
+select *
+from ui_employeesalary
+where year(Join_Date) = 2020;
+
+-- query employee whose full_name starts with an "A"
+
+select *
+from ui_duplicatecolumn
+where full_name like'A%';
+
+select * from ui_employeesalary;
+
+-- Query to select manager with NULL values
+
+-- I will add a manager column to ui_employeesalary
+
+ALTER TABLE ui_employeesalary
+ADD COLUMN manager varchar(50) NULL;
+
+select *
+from ui_employeesalary
+where manager is null;
+
+-- Dept with the highest number of employees
+
+-- add Dept_id column 
+
+ALTER TABLE ui_employeesalary
+ADD COLUMN Dept_id int NULL;
+
+UPDATE ui_employeesalary
+SET dept_id = CASE employee_nbr
+    WHEN 10001 THEN 1
+    WHEN 10002 THEN 1
+    WHEN 10003 THEN 2
+    WHEN 10004 THEN 2
+    WHEN 10005 THEN 3
+
+    WHEN 10006 THEN 3
+    WHEN 10007 THEN 3
+    WHEN 10008 THEN 3
+    WHEN 10009 THEN 4
+    WHEN 10010 THEN 4
+
+    WHEN 10011 THEN 4
+    WHEN 10012 THEN 4
+    WHEN 10013 THEN 5
+    WHEN 10014 THEN 5
+    WHEN 10015 THEN 5
+
+    WHEN 10016 THEN 5
+    WHEN 10017 THEN 5
+    WHEN 10018 THEN 3
+    WHEN 10019 THEN 4
+    WHEN 10020 THEN 5
+END;
+
+UPDATE ui_employeesalary
+SET dept_id = NULL;
+
+select dept_id, count(*)
+from ui_employeesalary
+group by dept_id
+order by count(*) desc
+-- limit 1
+;
+
+-- Query to select employees with high salary in each department using subquery
+
+select dept_id, employee_nbr, salary
+from ui_employeesalary as a
+where salary = (select max(salary)
+                from ui_employeesalary
+                where dept_id = a.dept_id)
+order by salary desc;
+
+-- increase salary to all employees
+
+update ui_employeesalary 
+set salary = salary * 1.1;
+
+--  query to select employees in a salary range
+
+select *
+from ui_employeesalary
+where salary between 70000 and 90000;
+
+select * from ui_employeesalary;
+
+-- Youngest employee in the organisaction
+
+-- I need to add a new column with the birth_date
+
+ALTER TABLE ui_employeesalary
+ADD COLUMN birth_date date NULL;
+
+-- query update the birth_date with value assure every employee is 18 years old or older birth+day is created random
+
+UPDATE ui_employeesalary
+SET birth_date = DATE(
+    FROM_DAYS(
+        FLOOR(
+            RAND() * (TO_DAYS('2008-12-31') - TO_DAYS('1970-01-01')) 
+            + TO_DAYS('1970-01-01')
+        )
+    )
+);
+
+select *
+from ui_employeesalary
+order by birth_date desc
+limit 1;
+
+-- query to select first and last record from a table
+
+(select * from ui_employeesalary order by employee_nbr asc limit 1)
+union all
+(select * from ui_employeesalary order by employee_nbr desc limit 1);
+
+-- query to select employees for each manager_id
+
+-- I need to create new column manager_id
+
+ALTER TABLE ui_employeesalary
+ADD COLUMN Manager_id INT NULL;
+ 
+-- assign value to manager_id for each dept_id
+
+UPDATE ui_employeesalary
+SET Manager_id = CASE dept_id
+    WHEN 1 THEN 101
+    WHEN 2 THEN 102
+    WHEN 3 THEN 103
+    WHEN 4 THEN 104
+    WHEN 5 THEN 105
+END;
+
+select *
+from ui_employeesalary
+where manager_id = 101;
+
+-- query to calculate total number of departments in the company
+
+SELECT COUNT(DISTINCT dept_id) AS total_departments
+FROM ui_employeesalary;
+
+-- query to select dept with lowest average salary
+
+select dept_id, avg(salary)
+from ui_employeesalary
+group by dept_id
+order by avg(salary) asc
+limit 1
+;
+
+-- query to delete all employees from a department
+
+delete from ui_employeesalary
+where dept_id = 1;
+
+select *
+from ui_employeesalary
+-- where dept_id = 1
+;
+
+-- query to select employee with more than 5 tears in the company 1825 = 5 years
+
+select *, datediff(curdate(), Join_Date)
+from ui_employeesalary
+where datediff(curdate(), Join_Date) > 1825;
+
+-- XML is not native in MYSQL
+
+-- Extract month from Current date
+
+select month(curdate());
+
+-- convert to lower case
+
+select lower('STRING')
