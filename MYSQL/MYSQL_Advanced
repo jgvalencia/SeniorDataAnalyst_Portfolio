@@ -1,1 +1,143 @@
 
+-- Query 1: CTE example with average, maximum, minimum, and count salary values
+with CTE_Example as 
+(
+Select gender, avg(salary) as Avg_sal, max(salary) as Max_sal, min(salary) as min_sal, count(salary) as count_sal
+from employee_demographics dem
+join employee_salary sal
+	on dem.employee_id = sal.employee_id
+group by gender
+)
+select avg(Avg_sal)
+from CTE_Example
+;
+
+-- Query 2: CTE example joining employee demographics and salary data
+with CTE_Example as 
+(
+Select employee_id, gender, birth_date
+from employee_demographics
+where birth_date > '1985-01-01'
+),
+CTE_Example2 as
+(
+select employee_id, salary
+from employee_salary
+where salary > 50000
+)
+select *
+from CTE_Example
+join CTE_Example2
+	on CTE_Example.employee_id = CTE_Example2.employee_id
+;
+
+-- Query 3: Create a temporary table for sample data
+create temporary table Temp_Table
+(first_name varchar (50),
+Last_name varchar (50),
+favorite_movies varchar (100));
+
+-- Query 4: View the temporary table contents
+select *
+from Temp_Table;
+
+-- Query 5: Insert a sample row into the temporary table
+insert into temp_table
+values('Alex', 'Freberg', 'Lord of the Rings: The Two Towers');
+
+-- Query 6: Create a temporary table for salaries over 50,000
+create temporary table salary_over_50k
+select *
+from employee_salary
+where salary >= 50000;
+
+-- Query 7: View salaries over 50,000
+select *
+from salary_over_50k;
+
+-- Query 8: Select all salaries at or above 50,000
+select *
+from employee_salary
+where salary >= 50000;
+
+-- Query 9: Create a stored procedure for large salaries
+Create Procedure large_salaries()
+select *
+from employee_salary
+where salary >= 50000;
+
+-- Query 10: Call the large salaries procedure
+call large_salaries();
+
+-- Query 11: Create a second stored procedure with multiple statements
+DELIMITER $$
+Create Procedure large_salaries2()
+begin
+	select *
+	from employee_salary
+	where salary >= 50000;
+	select *
+	from employee_salary
+	where salary >= 10000;
+end $$
+DELIMITER ;
+
+-- Query 12: Call the second stored procedure
+call large_salaries2();
+
+-- Query 13: Create a stored procedure with a parameter
+DELIMITER $$
+Create Procedure large_salaries3(P_employee_id int)
+begin
+	select first_name, Last_name, salary
+	from employee_salary
+	where employee_id = P_employee_id;
+end $$
+DELIMITER ;
+
+-- Query 14: Call the parameterized stored procedure
+call large_salaries3(1);
+
+-- Query 15: Create a trigger after insert on employee_salary
+DELIMITER $$
+Create trigger employee_insert
+	after insert on employee_salary
+    for each row
+begin
+	insert into employee_demographics (employee_id, first_name, last_name)
+    values (new.employee_id, new.first_name, new.last_name);
+end $$
+DELIMITER ;
+
+-- Query 16: Insert a new employee salary record
+insert into employee_salary (employee_id, first_name, last_name, occupation, salary, dept_id)
+values(13, 'Jean-Ralphio', 'Saperstein', 'Entertaiment 720 CEO', 1000000, null);
+
+-- Query 17: View the updated employee salary table
+select *
+from employee_salary;
+
+-- Query 18: View the employee demographics table
+Select *
+from employee_demographics;
+
+-- Query 19: Create an event to delete retirees every 30 seconds
+DELIMITER $$
+Create event delete_retirees
+on schedule every 30 second
+do
+begin
+	delete
+    from employee_demographics
+    where age >= 60;
+end $$
+DELIMITER ;
+
+-- Query 20: Show event-related system variables
+show variables like 'event%';
+
+
+
+
+
+
