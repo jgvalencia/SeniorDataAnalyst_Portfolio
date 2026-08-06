@@ -1,0 +1,100 @@
+-- MYSQL Basic Portfolio
+
+-- Query: Create database
+create DATABASE practice_db;
+
+-- Query: Select database
+use practice_db;
+
+-- Query: Drop employees table
+drop table employees;
+
+-- Query: Create employees table
+CREATE table employees (
+     id int primary key, name varchar(50), salary decimal(10,2));
+     
+insert into employees values
+     (1, 'Jose',50000),
+     (2, 'Maria',62000);
+     
+-- Query: Drop temporary table
+drop table Temp_Table;
+
+-- Query: Create temporary table from employees
+CREATE TEMPORARY TABLE Temp_Table AS
+select *
+from employees;
+
+-- Query: Select all employees
+select * from employees;
+
+-- Query: Select all rows from temporary table
+select * from Temp_Table;
+
+-- Query: Add Age column to temporary table
+alter table Temp_Table
+add column Age int;
+
+-- Query: Describe temporary table
+describe Temp_Table;
+
+-- Query: Disable safe updates for current session
+set sql_safe_updates = 0;
+
+-- Query: Check safe updates setting
+select @@sql_safe_updates;
+
+-- Query: Update Age values in temporary table
+update Temp_Table
+set Age = 
+    CASE id
+        When 1 then 25 
+        when 2 then 35
+	End;
+    
+-- Query: Filter temporary table by Age
+select * from Temp_Table
+where Age = 25;
+
+-- Query: Filter temporary table by name pattern
+select * from Temp_Table
+where name like 'ma%';
+
+-- Query: Filter temporary table by exact name
+select * from Temp_Table
+where name = 'maria';
+
+-- Query: Filter temporary table by list of names
+select * from Temp_Table
+where name in ('jose', 'maria');
+
+-- Query: Filter temporary table using AND condition
+select * from Temp_Table
+where name = 'Maria' and Age = 35;
+
+-- Query: Filter temporary table using NOT condition
+select * from Temp_Table
+where name = 'Maria' and not age = 25;
+
+-- Query: Order results by column in descending order
+select * from Temp_Table
+order by 3 desc;
+
+-- Query: Limit results to one row
+select * from Temp_Table
+limit 1;
+
+-- Query: Select distinct rows from temporary table
+select distinct * from Temp_Table
+;
+
+-- Query: Filter rows using BETWEEN
+select distinct * from Temp_Table
+where age between 25 and 35
+;
+
+-- Query: Aggregate age statistics
+select count(*) as Total_Customers,
+		avg(Age) as Average_Age
+from Temp_Table;
+
