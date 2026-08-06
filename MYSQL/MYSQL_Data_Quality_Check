@@ -1,0 +1,179 @@
+-- MYSQL Data Quality Portfolio
+
+-- Query 1: Delete the temporary table if it exists
+drop table Temp_Table;
+
+-- Query 2: Create a temporary table for data quality checks
+CREATE TEMPORARY TABLE Temp_Table (
+     id int primary key, orderid int, name varchar(50), salary decimal(10,2), load_Date date);
+     
+-- Query 3: Insert sample records into the temporary table
+     insert into Temp_Table values
+     (1, 1,'jose',50000,'2026-07-07'),
+     (2, 1,'maria',62000,'2026-07-08'),
+	 (3, 2, null,null,'2026-07-09'),
+     (4, 2, null,null,'2026-07-10'),
+	 (5, 1,'jose',-1,'2026-07-10'),
+     (6, 1,'jose',150000,'2026-07-10'),
+     (7, 1,'jose',700000,'2026-07-10'),
+     (8, 1,'jose',700000,'2026-07-10');
+;
+
+
+-- Query 4: View the temporary table contents
+select *
+from Temp_Table;
+
+-- Query 5: Check for null values in name or salary
+select *
+from Temp_Table
+where name is null or salary is null;
+
+-- Query 6: Check for duplicate order IDs
+select orderid, count(*)
+from Temp_Table
+group by orderid
+having count(*) > 1;
+
+-- Query 7: Check data freshness by finding the latest load date
+select max(load_Date) 
+from Temp_Table;
+
+-- Query 8: Validate salary ranges
+select *
+from Temp_Table
+where salary <= 0 or  salary > 100000;
+
+-- Query 9: Check date consistency against the current date
+select *
+from Temp_Table
+where curdate() - interval 3 day < load_Date;
+
+-- Query 10: Check the number of records loaded for the current date window
+select count(*)
+from Temp_Table
+where load_Date = curdate() - interval 3 day;
+
+-- Outlier Detection using subquery, this query doesn't work at least the temp table be converted to regular table
+
+-- Query 11: Convert the temporary table to a regular table for outlier detection
+CREATE TABLE Temp_Copy AS
+SELECT * FROM Temp_Table;
+
+-- Query 12: Detect outliers using a subquery based on average salary
+select *
+from Temp_Copy t
+where t.salary > (
+  select avg(salary)
+  from (select salary from Temp_Copy) as x);
+  
+-- Query 13: Detect outliers using a CTE based on average salary
+WITH cte AS (
+    SELECT AVG(salary) AS avg_salary
+    FROM (SELECT salary FROM Temp_Copy) AS x
+)
+SELECT *
+FROM Temp_Copy
+WHERE salary > (SELECT avg_salary FROM cte);
+
+-- Query 14: Set a parameter to identify salaries greater than the threshold
+SET @avg10 = 70000;
+
+-- Query 15: Detect outliers above the configured threshold
+SELECT *
+FROM Temp_Copy
+WHERE salary > @avg10;
+
+-- Query 16: Create a temporary orders table for referential integrity checks
+CREATE TEMPORARY TABLE Temp_Order (
+     id int primary key, orderid int, name varchar(50), salary decimal(10,2), load_Date date);
+     
+-- Query 17: Insert sample order records
+     insert into Temp_Order values
+     (1, 1,'jose',50000,'2026-07-07'),
+     (2, 1,'maria',62000,'2026-07-08'),
+	 (3, 2, null,null,'2026-07-09');
+     
+drop table Temp_Customer;
+
+-- Query 18: Create a temporary customer table for integrity checks
+CREATE TEMPORARY TABLE Temp_Customer (
+     id int, orderid int, name varchar(50), salary decimal(10,2), load_Date date, age varchar (2), status varchar (15));
+     
+-- Query 19: Insert sample customer records
+     insert into Temp_Customer values
+     (1, 1,'jose',50000,'2026-07-07','30','high'),
+     (2, 1,'maria',62000,'2026-07-08','25','low'),
+	 (3, 2, null,null,'2026-07-09','40','medium');
+     
+-- Query 20: View the orders table
+select * from Temp_Order;
+-- Query 21: View the customers table
+select * from Temp_Customer;
+
+-- Query 22: Check for missing IDs in the customer table compared to orders
+select o.id 
+from Temp_Order o
+left join Temp_Customer c
+on o.id = c.id
+where c.id is null;
+
+-- Query 23: Validate that the age column contains only numeric values
+SELECT *
+FROM Temp_Customer
+WHERE age REGEXP '^[0-9]+$' = 0;
+
+-- Query 24: Check for invalid accepted values in the status column
+select *
+from Temp_Customer
+where status not in ('Grande', 'Madiano', 'Pequeno');
+
+-- MYSQL Window Functions
+-- Query 25: Convert the temporary customer table to a regular table for window functions
+CREATE TABLE Temp_Copy AS
+SELECT * FROM Temp_Customer;
+
+-- Query 26: Use ROW_NUMBER to assign row numbers
+SELECT 
+    id,
+    ROW_NUMBER() OVER (ORDER BY age) AS rn
+FROM Temp_Copy;
+
+-- Query 27: Use RANK to rank salaries by descending value
+SELECT 
+    id,
+    salary,
+    RANK() OVER (ORDER BY salary DESC) AS salary_rank
+FROM Temp_Copy;
+
+-- Query 28: Use aggregate window functions for overall salary metrics
+SELECT 
+    id,
+    salary,
+    AVG(salary) OVER () AS avg_salary,
+    SUM(salary) OVER () AS total_salary
+FROM Temp_Copy;
+
+-- Query 29: Use partitioned window functions by order ID
+SELECT 
+    orderid,
+    salary,
+    AVG(salary) OVER (PARTITION BY orderid) AS dept_avg_salary
+FROM Temp_Copy;
+
+-- Query 30: Calculate running totals by ID
+SELECT 
+    id,
+    salary,
+    SUM(salary) OVER (ORDER BY id) AS running_total
+FROM Temp_Copy;
+
+-- Query 31: Calculate a moving average over the previous two rows and current row
+SELECT 
+    id,
+    salary,
+    AVG(salary) OVER (
+        ORDER BY id
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) AS moving_avg
+FROM Temp_Copy;
