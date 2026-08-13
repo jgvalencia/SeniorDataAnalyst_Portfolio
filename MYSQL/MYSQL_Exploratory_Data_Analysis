@@ -1,0 +1,77 @@
+-- Expression Data Analysis (EDA) SQL 
+
+-- Rows Count
+
+SELECT COUNT(*) as Number_of_rows FROM propertysales_raw;
+
+-- List only Distinct UniqueID Values
+
+SELECT COUNT(DISTINCT UniqueID) as Unique_ID FROM propertysales_raw;
+
+-- list 5 rows table sample
+
+SELECT * FROM propertysales_raw LIMIT 5;
+
+-- Check for UniqueID duplicity
+
+SELECT UniqueID, COUNT(*) AS cnt
+FROM propertysales_raw
+GROUP BY UniqueID
+HAVING COUNT(*) > 1;
+
+-- Rows, Distinct UniqueID and the difference Counts
+
+SELECT 
+    COUNT(*) AS total_rows,
+    COUNT(DISTINCT UniqueID) AS distinct_ids,
+    COUNT(*) - COUNT(DISTINCT UniqueID) AS duplicate_count
+FROM propertysales_raw;
+
+-- Another version of the previous query
+
+SELECT 
+    COUNT(*) AS total_rows,
+    COUNT(DISTINCT UniqueID) AS unique_customers,
+    SUM(CASE WHEN UniqueID IS NULL THEN 1 ELSE 0 END) AS null_customer_id
+FROM propertysales_raw;
+
+-- List table fields characteristics
+
+SELECT 
+    COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'propertysales_raw';
+
+-- Distribution Profiling (Numeric & Categorical)
+-- Numerical
+
+SELECT 
+    MIN(saleprice) AS min_amt,
+    MAX(saleprice) AS max_amt,
+    AVG(saleprice) AS avg_amt,
+    stddev(saleprice) AS std_amt
+FROM propertysales_raw;
+
+-- Categorical
+
+SELECT City, COUNT(*) 
+FROM propertysales_raw
+GROUP BY City
+ORDER BY COUNT(*) DESC;
+
+-- Outlier Detection
+
+SELECT *
+FROM propertysales_raw
+WHERE saleprice > (
+    SELECT AVG(saleprice) + 3 * stddev(saleprice) FROM propertysales_raw
+);
+
+-- Time‑Series Profiling Look for gaps, spikes, or unexpected patterns.
+
+SELECT 
+    CAST(SaleDate AS DATE) AS txn_day,
+    COUNT(*) AS txn_count
+FROM propertysales_raw
+GROUP BY CAST(SaleDate AS DATE)
+ORDER BY txn_day;
