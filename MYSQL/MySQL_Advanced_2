@@ -1,0 +1,471 @@
+-- Create Table with columns as text and we do Python to import the table from .csv file in python import process is faster
+
+CREATE TABLE Practice_DB.PropertySales_raw (
+    UniqueID TEXT,
+    ParcelID TEXT,
+    LandUse TEXT,
+    PropertyAddress TEXT,
+    SaleDate TEXT,
+    SalePrice TEXT,
+    LegalReference TEXT,
+    SoldAsVacant TEXT,
+    OwnerName TEXT,
+    OwnerAddress TEXT,
+    Acreage TEXT,
+    TaxDistrict TEXT,
+    LandValue TEXT,
+    BuildingValue TEXT,
+    TotalValue TEXT,
+    YearBuilt TEXT,
+    Bedrooms TEXT,
+    FullBath TEXT,
+    HalfBath TEXT
+);
+
+-- count the number of rows imported from .csv
+
+SELECT COUNT(*) FROM Practice_DB.PropertySales_raw;
+
+-- delete the rows in the table
+
+TRUNCATE TABLE Practice_DB.PropertySales_raw;
+
+-- list the table
+
+select * from Practice_DB.PropertySales_raw
+limit 10;
+
+-- check if this column is duplicated
+
+select * FROM PropertySales_raw
+where uniqueid = '2045';
+
+-- check if column contain not numeric values
+
+SELECT UniqueID
+FROM Practice_DB.PropertySales_raw
+WHERE UniqueID REGEXP '[^0-9]';
+
+-- update to null if the a field contan space
+
+UPDATE Practice_DB.PropertySales_raw
+SET UniqueID = NULL
+WHERE UniqueID = '';
+
+-- alter from text to INT
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY COLUMN UniqueID INT;
+
+-- check if we have duplicated in this field
+
+SELECT UniqueID, COUNT(*) AS count
+FROM Practice_DB.PropertySales_raw
+GROUP BY UniqueID
+HAVING COUNT(*) > 1;
+
+-- Make sure we dont have empy fields
+
+select SaleDate
+from Practice_DB.PropertySales_raw
+where SaleDate = '';
+
+-- List SaleDate and the date format how we need
+
+select SaleDate, STR_TO_DATE(SaleDate, '%M %e, %Y') AS converted
+from Practice_DB.PropertySales_raw
+limit 10;
+
+select SaleDate
+from Practice_DB.PropertySales_raw
+limit 10;
+
+UPDATE Practice_DB.PropertySales_raw
+SET SaleDate = STR_TO_DATE(SaleDate, '%M %e, %Y');
+
+-- Update SaleDate with the format needed
+
+UPDATE Practice_DB.PropertySales_raw
+SET SaleDate = STR_TO_DATE(SaleDate, '%M %e, %Y');
+
+-- Convert field from text to DATE
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY COLUMN SaleDate DATE;
+
+-- evaluate field PropertyAddress if they have blanks
+
+select PropertyAddress
+from Practice_DB.PropertySales_raw
+where PropertyAddress = ''
+-- limit 10
+;
+
+-- there are 29 rows with PropertyAddress field in blank we need to review, we have 2 parcelid one with address and one without.
+-- every parcelid must have same address
+
+select a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, 
+
+case 
+   when a.PropertyAddress = '' then b.PropertyAddress
+   else a.PropertyAddress
+end a_fixed
+
+from Practice_DB.PropertySales_raw a
+inner join Practice_DB.PropertySales_raw b
+      on a.ParcelID = b.ParcelID and
+         a.UniqueID <> b.UniqueID
+where a.PropertyAddress = '';
+
+-- 29 rows with empty PropertyAddress were updated with data selected using below query
+
+UPDATE Practice_DB.PropertySales_raw a
+JOIN Practice_DB.PropertySales_raw b
+      ON a.ParcelID = b.ParcelID
+     AND a.UniqueID <> b.UniqueID
+SET a.PropertyAddress = b.PropertyAddress
+WHERE a.PropertyAddress = '';
+
+-- no more blanks in column PropertyAddress
+
+select PropertyAddress
+from Practice_DB.PropertySales_raw
+where PropertyAddress = '';
+
+-- breaking out address into columns Address, city and state
+
+select *
+from Practice_DB.PropertySales_raw
+LIMIT 10;
+
+SELECT 
+    PropertyAddress,
+    SUBSTRING_INDEX(PropertyAddress, ',', 1) AS Address,
+    TRIM(SUBSTRING_INDEX(PropertyAddress, ',', -1)) AS City
+FROM Practice_DB.PropertySales_raw
+LIMIT 10;
+
+-- add the 2 new columns to the table append the columns at the end.
+
+ALTER TABLE Practice_DB.PropertySales_raw
+ADD COLUMN Address TEXT,
+ADD COLUMN City TEXT;
+
+--  update the new columns
+
+UPDATE Practice_DB.PropertySales_raw
+SET Address = SUBSTRING_INDEX(PropertyAddress, ',', 1),
+    City = TRIM(SUBSTRING_INDEX(PropertyAddress, ',', -1));
+    
+-- spli column OwnerAddress into OwnerSplitAddress, OwnerSplitCity
+
+SELECT 
+    OwnerAddress,
+    SUBSTRING_INDEX(OwnerAddress, ',', 1) AS OwnerSplitAddress,
+    TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(OwnerAddress, ',', 2), ',', -1)) AS OwnerSplitCity,
+    TRIM(SUBSTRING_INDEX(OwnerAddress, ',', -1)) AS OwnerSplitState
+FROM Practice_DB.PropertySales_raw
+LIMIT 10;
+
+-- add 3 new columns to the table
+
+ALTER TABLE Practice_DB.PropertySales_raw
+ADD COLUMN OwnerSplitAddress TEXT,
+ADD COLUMN OwnerSplitCity TEXT,
+ADD COLUMN OwnerSplitState TEXT;
+
+-- populate the 3 new columns
+
+UPDATE Practice_DB.PropertySales_raw
+SET OwnerSplitAddress = SUBSTRING_INDEX(OwnerAddress, ',', 1),
+    OwnerSplitCity = TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(OwnerAddress, ',', 2), ',', -1)),
+    OwnerSplitState = TRIM(SUBSTRING_INDEX(OwnerAddress, ',', -1));
+    
+-- Validate SoldAsVacant field content
+
+select distinct SoldAsVacant
+from Practice_DB.PropertySales_raw;
+
+-- evaluate how many in each values to consolidate in only two values
+
+select distinct SoldAsVacant, count(SoldAsVacant) as cont
+from Practice_DB.PropertySales_raw
+group by SoldAsVacant
+order by 2;
+
+-- consolidate in just two values "Yes" and "No"
+
+
+
+select SoldAsVacant,
+case
+	when SoldAsVacant = "Y" then "Yes"
+    when SoldAsVacant = "N" then "No"
+    else SoldAsVacant
+end
+from Practice_DB.PropertySales_raw;
+
+-- once confirmed the change will work we procede to update
+
+update Practice_DB.PropertySales_raw
+set SoldAsVacant = case
+					when SoldAsVacant = "Y" then "Yes"
+					when SoldAsVacant = "N" then "No"
+					else SoldAsVacant
+					end;
+                    
+-- Remove Duplicates, first we need to check the duplicated with cte
+
+with row_num_Cte as(
+select *,
+row_number() over ( partition by parcelid, propertyaddress, saleprice, saledate, legalreference order by uniqueid) row_num
+from Practice_DB.PropertySales_raw)
+select *
+from row_num_Cte
+where row_num > 1
+order by PropertyAddress;
+
+-- this query remove from table duplicated rows based on partition values. This query doesnt work in MYSQL DELETE from file created thru cte 
+-- 2013 error timeout (The timeout is may not not be caused for this query)
+
+with row_num_Cte as(
+select *,
+row_number() over ( partition by parcelid, propertyaddress, saleprice, saledate, legalreference order by uniqueid) row_num
+from Practice_DB.PropertySales_raw)
+delete
+from row_num_Cte
+where row_num > 1
+order by PropertyAddress;
+
+-- alternative delete error 2013 timeout (The timeout is may not not be caused for this query)
+
+DELETE t1
+FROM Practice_DB.PropertySales_raw t1
+JOIN Practice_DB.PropertySales_raw t2
+  ON t1.parcelid = t2.parcelid
+ AND t1.propertyaddress = t2.propertyaddress
+ AND t1.saleprice = t2.saleprice
+ AND t1.saledate = t2.saledate
+ AND t1.legalreference = t2.legalreference
+ AND t1.uniqueid > t2.uniqueid;
+
+-- alternative delete error 2013 timeout (The timeout is may not not be caused for this query)
+
+DELETE FROM Practice_DB.PropertySales_raw
+WHERE uniqueid IN (
+    SELECT uniqueid FROM (
+        SELECT uniqueid,
+               ROW_NUMBER() OVER (
+                   PARTITION BY parcelid, propertyaddress, saleprice, saledate, legalreference
+                   ORDER BY uniqueid
+               ) AS rn
+        FROM Practice_DB.PropertySales_raw
+    ) x
+    WHERE rn > 1
+);
+
+select *
+from Practice_DB.PropertySales_raw;
+
+-- remove columns from table error 2013 timeout table is corrupted
+
+alter table Practice_DB.PropertySales_raw
+drop column PropertyAddress,
+drop column OwnerAddress,
+drop column TaxDistrict;
+
+-- alternative to remove columns, create a new file without the columns to eliminate, rename file name inding in "_new", the _raw file rename as _old
+-- Rename _new as _raw and drop _old
+
+drop table PropertySales_clean;
+
+-- Convert sales Price column into decima 10,2
+
+-- Detect bad values before converting
+
+SELECT saleprice
+FROM Practice_DB.PropertySales_raw
+WHERE saleprice NOT REGEXP '^[0-9.,$ ]+$';
+
+-- update salprice after determine is not bad values in the field
+
+UPDATE Practice_DB.PropertySales_raw
+SET saleprice = CAST(
+        REPLACE(
+            REPLACE(TRIM(saleprice), '$', ''),
+        ',', '') AS DECIMAL(10,2)
+    );
+
+-- alter type of saleprice field type
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY saleprice DECIMAL(10,2);
+
+select *
+from Practice_DB.PropertySales_raw;
+
+-- Convert totalvalue column from text to decimal 10,2
+
+SELECT * -- totalvalue
+FROM Practice_DB.PropertySales_raw
+WHERE totalvalue NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET totalvalue = NULL
+WHERE TRIM(totalvalue) = '';
+
+SELECT totalvalue
+FROM Practice_DB.PropertySales_raw
+WHERE totalvalue is null or totalvalue = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY totalvalue DECIMAL(10,2);
+
+SELECT *
+FROM Practice_DB.PropertySales_raw
+where totalvalue is null;
+
+-- convert Acreage values from text to decimal 10,2
+
+SELECT acreage
+FROM Practice_DB.PropertySales_raw
+WHERE acreage NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET acreage = NULL
+WHERE TRIM(acreage) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY acreage DECIMAL(10,2);
+
+-- convert landvalue from text to decimal 10,2
+
+SELECT landvalue
+FROM Practice_DB.PropertySales_raw
+WHERE landvalue NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET landvalue = NULL
+WHERE TRIM(landvalue) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY landvalue DECIMAL(10,2);
+
+-- Convert buildingvalue from text to decimal 10,2
+
+SELECT buildingvalue
+FROM Practice_DB.PropertySales_raw
+WHERE buildingvalue NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET buildingvalue = NULL
+WHERE TRIM(buildingvalue) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY buildingvalue DECIMAL(10,2);
+
+select *
+from Practice_DB.PropertySales_raw;
+
+-- Convert YearBuilt from text to INT
+
+SELECT YearBuilt
+FROM Practice_DB.PropertySales_raw
+WHERE YearBuilt NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET YearBuilt = NULL
+WHERE TRIM(YearBuilt) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY YearBuilt int;
+
+-- Convert Bedrooms from text to INT
+
+SELECT Bedrooms
+FROM Practice_DB.PropertySales_raw
+WHERE Bedrooms NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET Bedrooms = NULL
+WHERE TRIM(Bedrooms) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY Bedrooms int;
+
+-- Convert FullBath from text to INT
+
+SELECT FullBath
+FROM Practice_DB.PropertySales_raw
+WHERE FullBath NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET FullBath = NULL
+WHERE TRIM(FullBath) = '';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY FullBath int;
+
+-- Convert HalfBath from text to INT
+
+SELECT HalfBath
+FROM Practice_DB.PropertySales_raw
+WHERE HalfBath NOT REGEXP '^[0-9.,$ ]+$';
+
+UPDATE Practice_DB.PropertySales_raw
+SET HalfBath = NULL
+WHERE HalfBath IS NULL
+   OR TRIM(HalfBath) = ''
+   OR TRIM(HalfBath) = '\r'
+   OR TRIM(HalfBath) = '\n'
+   OR TRIM(HalfBath) = '\t'
+   OR NOT HalfBath REGEXP '^[0-9]+$';
+
+ALTER TABLE Practice_DB.PropertySales_raw
+MODIFY HalfBath int;
+
+-- check healfbath length is greater than 1
+
+SELECT HalfBath, length(HalfBath)
+FROM Practice_DB.PropertySales_raw
+where  length(HalfBath) > 1;
+
+SELECT *
+FROM Practice_DB.PropertySales_raw
+where YearBuilt = (select min(YearBuilt) from Practice_DB.PropertySales_raw);
+-- group by landuse;
+
+SELECT *
+FROM Practice_DB.PropertySales_raw
+where YearBuilt in (select yearbuilt from Practice_DB.PropertySales_raw where YearBuilt <= 1800);
+
+SELECT *
+FROM Practice_DB.PropertySales_raw
+where yearbuilt is null;
+
+SELECT distinct OwnerSplitState, count(*) as contador
+FROM Practice_DB.PropertySales_raw
+group by OwnerSplitState
+;
+
+select distinct yearbuilt from Practice_DB.PropertySales_raw
+order by 1 asc;
+-- limit 10;
+
+SELECT distinct *
+FROM PropertySales_raw
+WHERE HalfBath IS NOT NULL
+  AND TRIM(HalfBath) <> ''
+  AND HalfBath REGEXP '^[0-9]+$'
+
+ORDER BY CAST(YearBuilt AS DATE) desc
+LIMIT 10;
+
+select *
+from ui_employeesalary;
+
+select *
+from ui_employeesalary
+where employee_nbr not in (select Manager_id from ui_employeesalary where Manager_id is not null);
+
+
