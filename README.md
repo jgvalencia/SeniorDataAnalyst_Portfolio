@@ -16,3 +16,4 @@ Data Analysis Tools
   KNIME (ETL)
   Tableau Prep (ETL)
   Excel Power Query
+  Machine Learning Algorithms
