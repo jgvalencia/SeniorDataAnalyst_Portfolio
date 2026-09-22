@@ -7,8 +7,8 @@ Excel Interview Prep Workbook — Utility Analytics Role
 Prepared for: JOSE  |  Date: September 18, 2026  |  Location: Wesley Chapel, FL							
 							
 #	Sheet Name	Purpose	Key Features	Data Rows	Formulas	Charts	Link
-1	Billing Spike Investigation	Detect billing anomalies using historical averages	Spike Ratio, Anomaly Flag, Conditional Formatting, Bar Chart	20	Yes	Yes	Go to Sheet 1
-2	Meter Read Data Quality	Validate meter reads for duplicates, reversals, missing reads	Data Quality Flags, Color-Coded CF, Deviation %, Summary	25	Yes	No	Go to Sheet 2
+1	Billing Spike Investigation	Detect billing anomalies using historical averages	Spike Ratio, Anomaly Flag, Conditional Formatting, Bar Chart	20	Yes	Yes	Go to Sheet 1  
+2	Meter Read Data Quality	Validate meter reads for duplicates, reversals, missing reads	Data Quality Flags, Color-Coded CF, Deviation %, Summary	25	Yes	No	Go to Sheet 2  
 3	Outage KPI Calculations	Calculate SAIDI/SAIFI reliability KPIs from outage events	SAIDI/SAIFI/CAIDI, Cumulative Totals, IEEE Benchmarks, Charts	30	Yes	Yes	Go to Sheet 3
 4	Billing Amount Formulas	Demonstrate Electric Company rate structure billing calculations	RS-1/GS-2/GS-3/IS-1 Rates, Tiered Pricing, Tax Calcs, Assumptions	15	Yes	No	Go to Sheet 4
 5	Power Query ETL Examples	Document Power Query M-code ETL logic for Electric Company pipelines	12 ETL Steps, 10 Best Practices, M-Code Snippets	22	No	No	Go to Sheet 5
